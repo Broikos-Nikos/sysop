@@ -51,9 +51,6 @@ mv "${EXTRACTED}" "${INSTALL_DIR}"
 
 echo "  Installed to ${INSTALL_DIR}."
 
-# ── Generate system-tailored soul ─────────────────────────────────────────────
-python3 "${INSTALL_DIR}/lib/soul_gen.py" "${INSTALL_DIR}/soul.md"
-
 # ── Create launcher ───────────────────────────────────────────────────────────
 mkdir -p "${BIN_DIR}"
 cat > "${BIN_LINK}" << EOF

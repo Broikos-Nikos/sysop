@@ -36,8 +36,8 @@ def main():
     distro = detect_distro()
 
     if "--setup" in args:
-        run_setup_wizard()
-        generate_soul()
+        config = run_setup_wizard()
+        generate_soul(config=config)
         print("Setup complete. Run 'sysop' to start.")
         sys.exit(0)
 
@@ -45,6 +45,7 @@ def main():
     if config is None:
         print(colored("  No config found. Running setup wizard...\n", "yellow"))
         config = run_setup_wizard()
+        generate_soul(config=config)
 
     system_prompt = build_system_prompt(config, distro)
     client = LLMClient(config)
@@ -70,7 +71,7 @@ def main():
 
         if user_input == "--setup":
             config = run_setup_wizard()
-            generate_soul()
+            generate_soul(config=config)
             client = LLMClient(config)
             tools = ToolExecutor(config, distro)
             provider = config.get("provider", "anthropic")
