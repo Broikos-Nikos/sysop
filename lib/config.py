@@ -14,16 +14,15 @@ CONFIG_PATH = os.path.expanduser("~/.config/sysop/config.json")
 # Model choices per provider (label, model_id).
 ANTHROPIC_MODELS = [
     ("claude-sonnet-4-5 (recommended — fast + capable)", "claude-sonnet-4-5-20251001"),
-    ("claude-haiku-4-5 (cheapest, lighter tasks)", "claude-haiku-4-5-20251001"),
-    ("claude-opus-4 (most capable, slower + expensive)", "claude-opus-4-20250514"),
+    ("claude-haiku-4-5 (lightweight, cheaper)", "claude-haiku-4-5-20251001"),
+    ("claude-opus-4 (overkill + expensive)", "claude-opus-4-20250514"),
 ]
 OPENAI_MODELS = [
-    ("gpt-5.4 (latest)", "gpt-5.4"),
+    ("gpt-5.3-codex (recommended — code-focused)", "gpt-5.3-codex"),
     ("gpt-5.3 (stable)", "gpt-5.3"),
-    ("gpt-5.3-codex (code-focused)", "gpt-5.3-codex"),
+    ("gpt-5.4 (overkill + expensive)", "gpt-5.4"),
     ("gpt-4.1 (previous gen)", "gpt-4.1"),
-    ("gpt-4.1-mini (cheaper, lighter tasks)", "gpt-4.1-mini"),
-    ("gpt-4o (multimodal, strong reasoning)", "gpt-4o"),
+    ("gpt-4.1-mini (lightweight, cheaper)", "gpt-4.1-mini"),
 ]
 
 
