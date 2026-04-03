@@ -40,6 +40,10 @@ elif [ -d "${INSTALL_DIR}/.git" ]; then
     echo "  Updating existing install in ${INSTALL_DIR}..."
     git -C "${INSTALL_DIR}" pull --ff-only
 else
+    if [ -d "${INSTALL_DIR}" ]; then
+        echo "  Clearing old install in ${INSTALL_DIR}..."
+        rm -rf "${INSTALL_DIR}"
+    fi
     echo "  Installing from ${REPO_URL}..."
     git clone "${REPO_URL}" "${INSTALL_DIR}"
 fi
