@@ -19,6 +19,7 @@ from lib.distro import detect_distro
 from lib.llm import LLMClient
 from lib.tools import ToolExecutor
 from lib.soul import build_system_prompt
+from lib.soul_gen import generate as generate_soul
 from lib.ui import colored, setup_readline, print_banner, print_tool_call, print_tool_result
 
 VERSION = "0.1.0"
@@ -36,6 +37,7 @@ def main():
 
     if "--setup" in args:
         run_setup_wizard()
+        generate_soul()
         print("Setup complete. Run 'sysop' to start.")
         sys.exit(0)
 
@@ -68,6 +70,7 @@ def main():
 
         if user_input == "--setup":
             config = run_setup_wizard()
+            generate_soul()
             client = LLMClient(config)
             tools = ToolExecutor(config, distro)
             provider = config.get("provider", "anthropic")
