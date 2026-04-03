@@ -24,6 +24,37 @@ OPENAI_MODELS = [
     ("gpt-4.1 (previous gen)", "gpt-4.1"),
     ("gpt-4.1-mini (lightweight, cheaper)", "gpt-4.1-mini"),
 ]
+GEMINI_MODELS = [
+    ("gemini-2.0-flash (recommended — fast + cheap)", "gemini-2.0-flash"),
+    ("gemini-1.5-pro (more capable, slower)", "gemini-1.5-pro"),
+    ("gemini-1.5-flash (lightweight, cheapest)", "gemini-1.5-flash"),
+]
+DEEPSEEK_MODELS = [
+    ("deepseek-chat / V3 (recommended — best general)", "deepseek-chat"),
+    ("deepseek-coder (code-focused, great for shell tasks)", "deepseek-coder"),
+    ("deepseek-reasoner / R1 (overkill + expensive)", "deepseek-reasoner"),
+]
+
+_PROVIDER_MODELS = {
+    "anthropic": ANTHROPIC_MODELS,
+    "openai":    OPENAI_MODELS,
+    "gemini":    GEMINI_MODELS,
+    "deepseek":  DEEPSEEK_MODELS,
+}
+
+_PROVIDERS = [
+    ("Anthropic (Claude)", "anthropic"),
+    ("OpenAI (GPT)",       "openai"),
+    ("Google (Gemini)",    "gemini"),
+    ("DeepSeek",           "deepseek"),
+]
+
+_KEY_URLS = {
+    "anthropic": "console.anthropic.com/settings/keys",
+    "openai":    "platform.openai.com/api-keys",
+    "gemini":    "aistudio.google.com/apikey",
+    "deepseek":  "platform.deepseek.com/api_keys",
+}
 
 
 def load_config(path=None):
@@ -90,8 +121,23 @@ def _validate_key(provider, api_key, model):
                 "x-api-key": api_key,
                 "anthropic-version": "2023-06-01",
             }
+        elif provider == "gemini":
+            url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+            body = json.dumps({
+                "model": model, "max_tokens": 10,
+                "messages": [{"role": "user", "content": "hi"}],
+            }).encode()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {}".format(api_key),
+            }
         else:
-            url = "https://api.openai.com/v1/chat/completions"
+            # openai + deepseek — both use the same OpenAI-compatible format.
+            urls = {
+                "openai":    "https://api.openai.com/v1/chat/completions",
+                "deepseek":  "https://api.deepseek.com/v1/chat/completions",
+            }
+            url = urls[provider]
             body = json.dumps({
                 "model": model, "max_tokens": 10,
                 "messages": [{"role": "user", "content": "hi"}],
@@ -158,23 +204,19 @@ def run_setup_wizard(path=None):
 
     # ── 1. Provider ──────────────────────────────────────────────────────────
     print("\n  1. Provider:")
-    providers = [("Anthropic (Claude)", "anthropic"), ("OpenAI (GPT)", "openai")]
-    idx = _pick(providers)
-    provider_id = providers[idx][1]
-    print("  -> {}".format(providers[idx][0]))
+    idx = _pick(_PROVIDERS)
+    provider_id = _PROVIDERS[idx][1]
+    print("  -> {}".format(_PROVIDERS[idx][0]))
 
     # ── 2. Model ─────────────────────────────────────────────────────────────
-    models = ANTHROPIC_MODELS if provider_id == "anthropic" else OPENAI_MODELS
+    models = _PROVIDER_MODELS[provider_id]
     print("\n  2. Model:")
     mi = _pick(models)
     model = models[mi][1]
     print("  -> {}".format(model))
 
     # ── 3. API key (loop until valid, 3 attempts then offer to save anyway) ──
-    if provider_id == "anthropic":
-        print("\n  3. Anthropic API key  (console.anthropic.com/settings/keys)")
-    else:
-        print("\n  3. OpenAI API key  (platform.openai.com/api-keys)")
+    print("\n  3. API key  ({})".format(_KEY_URLS[provider_id]))
 
     api_key = None
     for attempt in range(1, 4):

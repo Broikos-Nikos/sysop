@@ -37,6 +37,13 @@ class LLMResponse:
         self.thinking_blocks = thinking_blocks or []
 
 
+_OPENAI_URLS = {
+    "openai":   "https://api.openai.com/v1/chat/completions",
+    "gemini":   "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    "deepseek": "https://api.deepseek.com/v1/chat/completions",
+}
+
+
 class LLMClient:
     def __init__(self, config):
         self.provider = config["provider"]
@@ -46,13 +53,13 @@ class LLMClient:
             config.get("extended_thinking", False) and self.provider == "anthropic"
         )
         self._ctx = ssl.create_default_context()
+        self._chat_url = _OPENAI_URLS.get(self.provider)
 
     def chat(self, messages, tools, system_prompt=""):
         """Send a chat request and return LLMResponse. Streams text to stdout."""
         if self.provider == "anthropic":
             return self._anthropic_chat(messages, tools, system_prompt)
-        else:
-            return self._openai_chat(messages, tools, system_prompt)
+        return self._openai_chat(messages, tools, system_prompt)
 
     # ── Anthropic ──────────────────────────────────────────────────────────────
 
@@ -173,7 +180,7 @@ class LLMClient:
     # ── OpenAI ─────────────────────────────────────────────────────────────────
 
     def _openai_chat(self, messages, tools, system_prompt):
-        url = "https://api.openai.com/v1/chat/completions"
+        url = self._chat_url
 
         api_messages = []
         if system_prompt:
