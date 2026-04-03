@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# sysop installer — works on Raspbian, Ubuntu, Fedora (and most Linux).
-# Usage: bash install.sh
+# sysop installer/updater — works on Raspbian, Ubuntu, Fedora (and most Linux).
+# Usage: bash <(curl -fsSL https://raw.githubusercontent.com/Broikos-Nikos/sysop/main/install.sh)
 
 set -euo pipefail
 
-REPO_URL="https://github.com/Broikos-Nikos/sysop.git"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TARBALL_URL="https://github.com/Broikos-Nikos/sysop/archive/refs/heads/main.tar.gz"
 INSTALL_DIR="${HOME}/.local/share/sysop"
 BIN_DIR="${HOME}/.local/bin"
 BIN_LINK="${BIN_DIR}/sysop"
@@ -28,25 +27,29 @@ fi
 PY_VER=$(python3 -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))")
 echo "  Python $PY_VER found."
 
-# ── Install or update ─────────────────────────────────────────────────────────
-if [ "${SCRIPT_DIR}" = "${INSTALL_DIR}" ]; then
-    echo "  Already running from install directory — nothing to copy."
-elif [ -f "${SCRIPT_DIR}/sysop.py" ]; then
-    # Running from a local source directory — copy files directly.
-    echo "  Copying from ${SCRIPT_DIR} to ${INSTALL_DIR}..."
-    mkdir -p "${INSTALL_DIR}"
-    cp -r "${SCRIPT_DIR}/." "${INSTALL_DIR}/"
-elif [ -d "${INSTALL_DIR}/.git" ]; then
-    echo "  Updating existing install in ${INSTALL_DIR}..."
-    git -C "${INSTALL_DIR}" pull --ff-only
+# ── Download and extract ───────────────────────────────────────────────────────
+echo "  Downloading..."
+
+TMP=$(mktemp -d)
+trap 'rm -rf "${TMP}"' EXIT
+
+if command -v curl &>/dev/null; then
+    curl -fsSL "${TARBALL_URL}" -o "${TMP}/sysop.tar.gz"
+elif command -v wget &>/dev/null; then
+    wget -qO "${TMP}/sysop.tar.gz" "${TARBALL_URL}"
 else
-    if [ -d "${INSTALL_DIR}" ]; then
-        echo "  Clearing old install in ${INSTALL_DIR}..."
-        rm -rf "${INSTALL_DIR}"
-    fi
-    echo "  Installing from ${REPO_URL}..."
-    git clone "${REPO_URL}" "${INSTALL_DIR}"
+    echo "  ERROR: curl or wget is required."
+    exit 1
 fi
+
+tar -xzf "${TMP}/sysop.tar.gz" -C "${TMP}"
+EXTRACTED=$(find "${TMP}" -maxdepth 1 -mindepth 1 -type d | head -1)
+
+rm -rf "${INSTALL_DIR}"
+mkdir -p "$(dirname "${INSTALL_DIR}")"
+mv "${EXTRACTED}" "${INSTALL_DIR}"
+
+echo "  Installed to ${INSTALL_DIR}."
 
 # ── Create launcher ───────────────────────────────────────────────────────────
 mkdir -p "${BIN_DIR}"
@@ -58,29 +61,28 @@ chmod +x "${BIN_LINK}"
 
 # ── PATH check ────────────────────────────────────────────────────────────────
 if ! echo "${PATH}" | tr ':' '\n' | grep -qx "${BIN_DIR}"; then
-    # Try to detect which shell rc file to update.
     SHELL_RC=""
-    if [ -n "${BASH_VERSION:-}" ] && [ -f "${HOME}/.bashrc" ]; then
+    if [ -f "${HOME}/.bashrc" ]; then
         SHELL_RC="${HOME}/.bashrc"
-    elif [ -n "${ZSH_VERSION:-}" ] && [ -f "${HOME}/.zshrc" ]; then
+    elif [ -f "${HOME}/.zshrc" ]; then
         SHELL_RC="${HOME}/.zshrc"
     elif [ -f "${HOME}/.profile" ]; then
         SHELL_RC="${HOME}/.profile"
     fi
 
     if [ -n "${SHELL_RC}" ]; then
-        echo "" >> "${SHELL_RC}"
-        echo '# sysop' >> "${SHELL_RC}"
-        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "${SHELL_RC}"
+        if ! grep -q '.local/bin' "${SHELL_RC}"; then
+            echo '' >> "${SHELL_RC}"
+            echo 'export PATH="$HOME/.local/bin:$PATH"  # sysop' >> "${SHELL_RC}"
+        fi
         echo "  Added ~/.local/bin to PATH in ${SHELL_RC}."
-        echo "  Restart your shell or run: source ${SHELL_RC}"
+        echo "  Run: source ${SHELL_RC}"
     else
         echo "  WARNING: ${BIN_DIR} is not in PATH."
-        echo "  Add this to your shell config:"
-        echo '    export PATH="$HOME/.local/bin:$PATH"'
+        echo "  Add to your shell config: export PATH=\"\$HOME/.local/bin:\$PATH\""
     fi
 fi
 
 echo ""
-echo "  Done! Run 'sysop' to start (or: python3 ${INSTALL_DIR}/sysop.py)"
+echo "  Done! Run: sysop"
 echo ""
